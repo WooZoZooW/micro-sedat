@@ -6,7 +6,7 @@
   "description": "Mobile-first Russian single-page submission form (press-and-hold audio recording, photo/file attachments) with a serverless GitHub delivery backend.",
   "license": "MIT",
   "engines": {
-    "node": ">=20.6.0"
+    "node": ">=22.9.0"
   },
   "scripts": {
     "dev": "node --env-file-if-exists=.env backend/src/node-server.js",

@@ -42,7 +42,8 @@ external workflow updates it.
 
 ## Quick start (Termux / Linux / macOS)
 
-Requirements: Node.js >= 20.6 (for `--env-file-if-exists`), no npm install required.
+Requirements: Node.js >= 22.9 (for `--env-file-if-exists` and the test runner; verified on Node 26),
+no npm install required.
 
 ```bash
 cp .env.example .env          # fill in GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO
