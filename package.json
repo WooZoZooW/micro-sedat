@@ -1,0 +1,23 @@
+{
+  "name": "micro-sedat",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Mobile-first Russian single-page submission form (press-and-hold audio recording, photo/file attachments) with a serverless GitHub delivery backend.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.6.0"
+  },
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env backend/src/node-server.js",
+    "start": "node --env-file-if-exists=.env backend/src/node-server.js",
+    "test": "node --test",
+    "test:frontend": "node --test \"tests/frontend/*.test.js\"",
+    "test:backend": "node --test \"backend/test/*.test.js\"",
+    "test:integration": "node --test backend/test/integration.test.js",
+    "lint": "node tools/lint.mjs",
+    "check": "npm run lint && npm test",
+    "verify:destination": "node tools/verify-destination.mjs",
+    "deploy": "wrangler deploy --config backend/wrangler.toml"
+  }
+}

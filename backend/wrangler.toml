@@ -1,0 +1,31 @@
+name = "micro-sedat"
+main = "src/worker.js"
+compatibility_date = "2025-09-01"
+workers_dev = true
+
+[assets]
+directory = "../frontend"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[observability]
+enabled = true
+
+[vars]
+GITHUB_OWNER = "WooZoZooW"
+GITHUB_REPO = "micro-sedat-inbox"
+GITHUB_SUBMISSION_MODE = "release"
+ALLOWED_ORIGINS = ""
+MAX_TOTAL_BYTES = "20971520"
+MAX_FILE_BYTES = "15728640"
+MAX_AUDIO_BYTES = "15728640"
+MAX_FILES = "12"
+MAX_TEXT_CHARS = "4000"
+RATE_LIMIT_WINDOW_MS = "600000"
+RATE_LIMIT_MAX = "12"
+
+# Secrets are never stored in this file. Set them with:
+#   wrangler secret put GITHUB_TOKEN --config backend/wrangler.toml
+#   wrangler secret put ACCESS_CODE --config backend/wrangler.toml
+#   wrangler secret put ADMIN_TOKEN --config backend/wrangler.toml

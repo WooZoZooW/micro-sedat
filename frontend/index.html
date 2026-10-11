@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0e0e12" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="format-detection" content="telephone=no">
+  <title>Передать информацию</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a66ff'/%3E%3Cpath d='M16 8a3.5 3.5 0 0 0-3.5 3.5v5a3.5 3.5 0 0 0 7 0v-5A3.5 3.5 0 0 0 16 8zm-6.5 8.5a6.5 6.5 0 0 0 5.5 6.4V26h2v-3.1a6.5 6.5 0 0 0 5.5-6.4h-2a4.5 4.5 0 0 1-9 0z' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="app__header">
+      <h1 class="app__title">Передать информацию</h1>
+      <p class="app__subtitle">Запись голоса, фотографии и файлы — одним сообщением.</p>
+    </header>
+
+    <section class="card" aria-labelledby="record-heading">
+      <h2 id="record-heading" class="card__title">Голосовое сообщение</h2>
+      <div class="recorder">
+        <button id="record-button" class="record-button" type="button" aria-pressed="false" aria-describedby="record-hint">
+          <svg class="record-button__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5.2-3a5.2 5.2 0 0 1-10.4 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-1.8z" fill="currentColor"/>
+          </svg>
+          <span class="record-button__label">Удерживайте</span>
+        </button>
+        <div id="record-timer" class="record-timer" aria-live="off" hidden>00:00</div>
+        <p id="record-hint" class="hint">Нажмите и удерживайте кнопку, чтобы записать сообщение. Отпустите, чтобы закончить.</p>
+        <p id="record-error" class="error-text" role="alert" hidden></p>
+      </div>
+      <div id="audio-preview" class="audio-preview" hidden>
+        <audio id="audio-player" controls preload="metadata"></audio>
+        <button id="discard-audio" class="button button--ghost" type="button">Удалить запись</button>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="files-heading">
+      <h2 id="files-heading" class="card__title">Фотографии и файлы</h2>
+      <input id="file-input" class="visually-hidden" type="file" multiple>
+      <button id="add-files" class="button button--secondary button--wide" type="button">Прикрепить фото или файл</button>
+      <ul id="attachment-list" class="attachments" aria-label="Вложения"></ul>
+    </section>
+
+    <section class="card" aria-labelledby="text-heading">
+      <h2 id="text-heading" class="card__title">Дополнительные указания</h2>
+      <label class="visually-hidden" for="instructions">Дополнительные указания</label>
+      <textarea id="instructions" class="textarea" rows="4" maxlength="4000" placeholder="Опишите, что нужно изменить или проверить"></textarea>
+      <div id="text-counter" class="counter">0 / 4000</div>
+    </section>
+
+    <section id="restore-banner" class="banner" hidden>
+      <p class="banner__text">Найдено неотправленное сообщение.</p>
+      <div class="banner__actions">
+        <button id="restore-draft" class="button button--secondary" type="button">Восстановить</button>
+        <button id="delete-draft" class="button button--ghost" type="button">Удалить</button>
+      </div>
+    </section>
+
+    <div class="submit-area">
+      <button id="submit-button" class="button button--primary button--wide" type="button" disabled>Отправить</button>
+      <div id="progress" class="progress" hidden>
+        <div id="progress-bar" class="progress__bar"></div>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite" hidden></p>
+    </div>
+
+    <footer class="app__footer">
+      Материалы используются только для правок проекта.
+    </footer>
+  </main>
+
+  <div id="code-dialog" class="dialog" hidden>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="code-dialog-title">
+      <h2 id="code-dialog-title" class="dialog__title">Код доступа</h2>
+      <p class="dialog__text">Введите код, который выдал владелец сайта.</p>
+      <label class="visually-hidden" for="code-input">Код доступа</label>
+      <input id="code-input" class="input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <p id="code-error" class="error-text" role="alert" hidden></p>
+      <div class="dialog__actions">
+        <button id="code-cancel" class="button button--ghost" type="button">Отмена</button>
+        <button id="code-save" class="button button--primary" type="button">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

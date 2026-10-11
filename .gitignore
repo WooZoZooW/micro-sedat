@@ -1,0 +1,26 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+.dev.vars
+wrangler.toml.bak
+
+# Dependencies and caches
+node_modules/
+.wrangler/
+.cache/
+tmp/
+coverage/
+
+# Logs and OS noise
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Local submission data (never commit)
+data/
+submissions/
+*.m4a
+*.webm
+*.ogg
