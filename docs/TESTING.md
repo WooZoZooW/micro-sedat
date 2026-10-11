@@ -41,3 +41,10 @@ Last executed in this environment (Node v26.4.0, Android aarch64, Termux):
   attempted beyond checking that desktop browser binaries are absent. DOM code in `frontend/app.js` is
   therefore covered only by manual device testing plus unit tests of its pure modules.
 - Microphone capture cannot be tested automatically; see `docs/IPHONE_CHECKLIST.md`.
+
+## Continuous integration
+
+`docs/ci-check.example.yml` contains a ready GitHub Actions workflow that runs `npm run lint` and
+`npm test` on push. It is stored outside `.github/workflows/` because the GitHub token used in this
+environment lacks the `workflow` OAuth scope. To enable CI, copy it to `.github/workflows/check.yml`
+using the GitHub web UI or a token that has the `workflow` scope.
