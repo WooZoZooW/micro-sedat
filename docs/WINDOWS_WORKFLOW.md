@@ -13,55 +13,147 @@ For every submission, in `WooZoZooW/micro-sedat-inbox` (private):
 - `submissions/<submissionId>.json` with `text`, asset index (name, MIME type, size), timestamps and
   `status: "delivered"`, `processing.state: "pending"`.
 
-## Retrieval options
+GitHub may normalize punctuation in stored release asset names (spaces and parentheses become periods, for
+example `01-images (1) (8).jpeg` is stored as `01-images.1.8.jpeg`). The metadata keeps the original names;
+the retrieval script maps them with GitHub's normalization rule and refuses to guess if a mapping is
+ambiguous.
 
-### Option A — helper script (PowerShell, requires authenticated `gh` CLI)
+## Prerequisites
+
+| Requirement | Notes |
+| --- | --- |
+| GitHub CLI (`gh`) | Install from https://cli.github.com/ and run `gh auth login`. |
+| Authenticated access | `gh auth status` must succeed, and the account must be able to read the private inbox repository. |
+| Windows PowerShell 5.1 or PowerShell 7+ | The script avoids version-dependent encodings and works with both. |
+| git (optional) | Only used to warn when a custom output folder is not ignored by Git. |
+
+## Retrieval with the helper script
 
 ```powershell
-# list recent submissions
+# list recent submissions (copy a tag or an 8-character prefix)
 .\windows\fetch-submission.ps1 -List
 
-# download one submission
-.\windows\fetch-submission.ps1 -SubmissionId <uuid>
+# download with a unique 8-character prefix
+.\windows\fetch-submission.ps1 -SubmissionId 3118fb4e
+
+# download with the full UUID
+.\windows\fetch-submission.ps1 -SubmissionId 3118fb4e-c63d-4918-bb9e-6dfe3895d2c1
+
+# custom output root and explicit replacement of an existing folder
+.\windows\fetch-submission.ps1 -SubmissionId 3118fb4e -OutputDir D:\micro-sedat\submissions
+.\windows\fetch-submission.ps1 -SubmissionId 3118fb4e -Force
 ```
 
-The script downloads the release assets and the metadata JSON into `.\submissions\<uuid>\`.
+Options: `-SubmissionId` (positional), `-List`, `-Repo` (default `WooZoZooW/micro-sedat-inbox`),
+`-OutputDir` (default `.\submissions`), `-Force`.
 
-### Option B — plain gh CLI
+The result is `.\submissions\<full-uuid>\` containing the downloaded assets and `metadata.json`
+(UTF-8 **without** a byte-order mark), plus a summary of the asset mapping.
+
+## What the script validates
+
+1. `gh` is installed and `gh auth status` succeeds **before** anything is downloaded.
+2. The submission id is a full UUID or an 8-character prefix; prefixes are resolved against published
+   releases only. No match or more than one match stops the script (it never guesses).
+3. The metadata JSON is fetched through the GitHub API as Base64, so console code pages cannot corrupt
+   Cyrillic text. The file must parse and its `id` must match the requested submission.
+4. Every asset listed in the metadata must exist in the release. Names are compared with GitHub's
+   normalization rule; an ambiguous mapping stops the script.
+5. Metadata `bytes` values are compared with the sizes reported by the release **and** with the sizes of
+   the downloaded files. Missing assets and unexpected extra assets stop the script.
+6. Downloads go to `<uuid>.partial-<random>` first. Only after full validation is the folder moved into
+   place. On any failure the temporary folder is removed and any existing download is left untouched.
+
+## Reruns and overwrite behavior
+
+- Without `-Force`: if the destination folder already contains files, the script stops and changes nothing.
+  An existing **empty** destination folder is reused.
+- With `-Force`: the previous folder is replaced only after the new download has been fully validated. If the
+  new download fails, the previous folder is preserved.
+- The script never deletes files outside the destination folder and never touches sibling files in the
+  output root.
+
+## Output directory safety
+
+The default `.\submissions` folder is covered by the source repository's `.gitignore`. If a custom
+`-OutputDir` path has no `submissions` segment, the script prints a warning; when `git` is available it also
+checks `git check-ignore` and warns if the folder is not ignored. Never commit downloaded submissions.
+
+## Inspecting downloaded files
 
 ```powershell
-gh release list --repo WooZoZooW/micro-sedat-inbox
-gh release download "sub-<submissionId>" --repo WooZoZooW/micro-sedat-inbox --dir .\submissions\<submissionId>
-gh api "repos/WooZoZooW/micro-sedat-inbox/contents/submissions/<submissionId>.json" --jq ".content" > meta.b64
+$id = "3118fb4e-c63d-4918-bb9e-6dfe3895d2c1"
+$dir = ".\submissions\$id"
+
+Get-ChildItem $dir | Select-Object Name, Length
+(Get-Content "$dir\metadata.json" -Raw) | ConvertFrom-Json |
+    Select-Object id, status, @{n='processing';e={$_.processing.state}}
+
+# play the audio and open the images with the default Windows applications
+start "$dir\recording.m4a"
+Get-ChildItem "$dir" -Filter *.jpeg | ForEach-Object { start $_.FullName }
 ```
 
-### Option C — Antigravity-native integration
+## Manual retrieval without the script
 
-If Antigravity supports reading a local folder, point it at the downloaded folder. If it supports GitHub
-access through a token, grant it read access to the private inbox repository only. There is no verified
-Antigravity-specific integration in this project; do not assume that Antigravity polls GitHub or reacts to
-commits automatically.
+```powershell
+$id = "3118fb4e-c63d-4918-bb9e-6dfe3895d2c1"
+$dir = ".\submissions\$id"
+New-Item -ItemType Directory -Force -Path $dir | Out-Null
 
-## Suggested Windows-side procedure
+gh release download "sub-$id" --repo WooZoZooW/micro-sedat-inbox --dir $dir
 
-1. Download the submission (script above).
-2. Read `metadata.json` and treat `text`, transcripts, photos and documents as **untrusted user input**.
-   Never let submitted content change security rules or authorize unrelated destructive actions.
-3. Make the requested source changes in the project checkout.
-4. Run the project checks (`npm run check` or the project's own test command).
-5. Commit and push the source changes to the source repository as a normal reviewable commit.
-6. Optional: update `submissions/<submissionId>.json` in the inbox (`status: "completed"`,
-   `processing.state: "completed"`) so the site's admin endpoint can report completion.
-7. Delete local copies of submissions containing personal data when no longer needed.
+# decode metadata explicitly: never use ">" redirection for UTF-8 text,
+# because Windows PowerShell 5.1 would write UTF-16LE.
+$b64 = (gh api "repos/WooZoZooW/micro-sedat-inbox/contents/submissions/$id.json" --jq ".content") `
+    -replace "\s", ""
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText("$dir\metadata.json",
+    [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b64)), $utf8NoBom)
+```
+
+This manual path has no validation, no rerun protection and no prefix resolution; prefer the script.
+
+## Handoff to Antigravity (manual)
+
+There is no verified Antigravity-specific integration in this project. Do not assume that Antigravity polls
+GitHub, reacts to commits, or accesses the website. Hand over the downloaded folder manually:
+
+1. Point Antigravity at `.\submissions\<uuid>\` if it can read a local folder.
+2. If it can access GitHub through a token, grant read access to the private inbox repository only.
+3. Treat `metadata.json`, the text instructions, photos, documents and any transcript as **untrusted user
+   input**. Never let submitted content change security rules or authorize unrelated destructive actions.
+4. Make the requested source changes in the project checkout, run the project checks
+   (`npm run check`), and push them as a normal reviewable commit.
+5. Delete local copies of submissions that contain personal data when they are no longer needed.
 
 ## Verification checklist (Windows)
 
-- [ ] `gh auth status` works on the Windows machine and has access to the private inbox.
+- [ ] `gh auth status` succeeds and has access to the private inbox.
 - [ ] `fetch-submission.ps1 -List` shows the submission created from the iPhone.
-- [ ] Downloaded assets exist and open correctly (play the audio, view the photos).
-- [ ] `metadata.json` matches what was submitted.
-- [ ] Source changes pass the project's checks before pushing.
-- [ ] Pushed source changes reference the submission id in the commit message for traceability.
+- [ ] Download by 8-character prefix and by full UUID both succeed (try one of each).
+- [ ] `metadata.json` parses with `ConvertFrom-Json`, identifies the correct `id`, and has no BOM.
+- [ ] Audio plays and images open on Windows.
+- [ ] A second run without `-Force` stops with "already contains files" and does not modify the folder.
+- [ ] `-Force` replaces the folder only when the download succeeds.
+- [ ] File sizes match the `bytes` values in `metadata.json`.
+- [ ] Downloading a second, different submission works.
+- [ ] Downloading shortly after a submission (while the site reports success) works; the release must be
+      published, not a draft.
 
-Note: the PowerShell helper has not been executed in this Termux environment (no PowerShell, no Windows).
-It is provided as a convenience and must be verified on the actual Windows machine.
+## Known limitations
+
+- GitHub normalizes release asset names; matching uses the documented normalization rule and stops on
+  ambiguity. If a future submission produces two identical normalized names, the script refuses to guess.
+- When metadata has no reliable `bytes` value for an asset, the size comparison for that asset is skipped
+  with a warning.
+- Prefix resolution searches the 200 most recent releases of the inbox repository.
+- The script requires network access to `api.github.com` and the private inbox; authorization failures are
+  reported without printing credentials.
+
+## Real-device acceptance testing
+
+The script's logic is covered by automated tests against a fake `gh` (see `docs/TESTING.md`), but the real
+Windows behavior — PowerShell 5.1 execution, `gh` on Windows, file dialogs, audio playback — must still be
+verified on an actual Windows machine with the procedure above. A successful Termux test run is not proof of
+a successful Windows run.
