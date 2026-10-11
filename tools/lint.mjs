@@ -86,6 +86,11 @@ const appJs = await readFile(path.join(root, 'frontend/app.js'), 'utf8');
 if (!appJs.includes('getUserMedia')) failures.push('frontend/app.js must use getUserMedia');
 if (!appJs.includes('MediaRecorder')) failures.push('frontend/app.js must use MediaRecorder');
 
+const stylesCss = await readFile(path.join(root, 'frontend/styles.css'), 'utf8');
+if (!/\[hidden\]\s*\{[^}]*display:\s*none\s*!important/i.test(stylesCss)) {
+  failures.push('frontend/styles.css must keep the "[hidden] { display: none !important; }" rule so hidden panels stay hidden');
+}
+
 const frontendBundle = [...scriptFiles.filter((file) => file.startsWith('frontend/')).map(async (file) => `${file}\n${await readFile(path.join(root, file), 'utf8')}`)];
 for (const promise of frontendBundle) {
   const content = await promise;
